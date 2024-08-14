@@ -27,8 +27,13 @@ namespace FlightManagerService.Controllers
 
         // POST: api/Flights
         [HttpPost]
+        [HttpPost]
         public async Task<ActionResult> PostFlights([FromBody] IEnumerable<Flight> flights)
         {
+            // Очистка таблицы перед добавлением новых данных
+            _context.Flights.RemoveRange(_context.Flights);
+            await _context.SaveChangesAsync();
+
             // Добавляем все рейсы в базу данных
             _context.Flights.AddRange(flights);
             await _context.SaveChangesAsync();
@@ -36,5 +41,6 @@ namespace FlightManagerService.Controllers
             // Возвращаем статус Created
             return CreatedAtAction(nameof(GetFlights), new { }, null);
         }
+
     }
 }
