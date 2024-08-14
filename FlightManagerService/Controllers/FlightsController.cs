@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using FlightManagerService.Data;
 using FlightManagerService.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FlightManagerService.Controllers
 {
@@ -25,13 +27,14 @@ namespace FlightManagerService.Controllers
 
         // POST: api/Flights
         [HttpPost]
-        public async Task<ActionResult<Flight>> PostFlight(Flight flight)
+        public async Task<ActionResult> PostFlights([FromBody] IEnumerable<Flight> flights)
         {
-            _context.Flights.Add(flight);
+            // Добавляем все рейсы в базу данных
+            _context.Flights.AddRange(flights);
             await _context.SaveChangesAsync();
 
-            // Возвращаем статус Created с данными созданного рейса
-            return CreatedAtAction(nameof(GetFlights), new { id = flight.FlightId }, flight);
+            // Возвращаем статус Created
+            return CreatedAtAction(nameof(GetFlights), new { }, null);
         }
     }
 }
