@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using FlightManagerService.Data;
-using FlightManagerService.Models;
+﻿using FlightManagerService.Models;
+using FlightManagerService.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,44 +11,44 @@ namespace FlightManagerService.Controllers
     [ApiController]
     public class FlightsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IRepository<Flight> _flightRepository;
 
-        public FlightsController(AppDbContext context)
+        public FlightsController(IRepository<Flight> flightRepository)
         {
-            _context = context;
+            _flightRepository = flightRepository;
         }
 
         // GET: api/Flights
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Flight>>> GetFlights()
         {
-            return await _context.Flights.ToListAsync();
+            var flights = await _flightRepository.GetAllAsync();
+            return Ok(flights);
         }
 
         // POST: api/Flights/replace
         [HttpPost("replace")]
-        public async Task<ActionResult> ReplaceFlights([FromBody] IEnumerable<Flight> flights)
+        public async Task<IActionResult> ReplaceFlights([FromBody] IEnumerable<Flight> flights)
         {
-            _context.Flights.RemoveRange(_context.Flights);
-            await _context.SaveChangesAsync();
-
-            _context.Flights.AddRange(flights);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetFlights), new { }, null);
+            var success = await _flightRepository.ReplaceAllAsync(flights);
+            if (success)
+            {
+                return CreatedAtAction(nameof(GetFlights), null);
+            }
+            return BadRequest("Failed to replace flights.");
         }
+
         // POST: api/Flights/add
         [HttpPost("add")]
         public async Task<IActionResult> AddFlights([FromBody] IEnumerable<Flight> flights)
         {
-            var existingFlightIds = _context.Flights.Select(f => f.FlightId).ToHashSet();
+            var existingFlightIds = (await _flightRepository.GetAllAsync()).Select(f => f.FlightId).ToHashSet();
             var newFlights = flights.Where(f => !existingFlightIds.Contains(f.FlightId)).ToList();
             var existingFlights = flights.Where(f => existingFlightIds.Contains(f.FlightId)).ToList();
 
             if (newFlights.Any())
             {
-                _context.Flights.AddRange(newFlights);
-                await _context.SaveChangesAsync();
+                await _flightRepository.AddAsync(newFlights);
             }
 
             if (existingFlights.Any())
@@ -61,8 +60,7 @@ namespace FlightManagerService.Controllers
                 });
             }
 
-            return Ok(); // Возвращаем Ok, если добавлены новые данные или если ничего не было добавлено
+            return Ok();
         }
-
     }
 }
