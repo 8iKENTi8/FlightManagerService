@@ -38,14 +38,13 @@ namespace FlightManagerService.Controllers
 
             return CreatedAtAction(nameof(GetFlights), new { }, null);
         }
-
         // POST: api/Flights/add
         [HttpPost("add")]
-        public async Task<ActionResult> AddFlights([FromBody] IEnumerable<Flight> flights)
+        public async Task<IActionResult> AddFlights([FromBody] IEnumerable<Flight> flights)
         {
             var existingFlightIds = _context.Flights.Select(f => f.FlightId).ToHashSet();
-
             var newFlights = flights.Where(f => !existingFlightIds.Contains(f.FlightId)).ToList();
+            var existingFlights = flights.Where(f => existingFlightIds.Contains(f.FlightId)).ToList();
 
             if (newFlights.Any())
             {
@@ -53,7 +52,17 @@ namespace FlightManagerService.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            if (existingFlights.Any())
+            {
+                return Conflict(new
+                {
+                    Message = "Некоторые рейсы уже существуют в базе данных.",
+                    ExistingFlights = existingFlights
+                });
+            }
+
             return Ok(); // Возвращаем Ok, если добавлены новые данные или если ничего не было добавлено
         }
+
     }
 }
