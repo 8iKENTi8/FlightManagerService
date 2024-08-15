@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using FlightManagerService.Data;
 using FlightManagerService.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FlightManagerService.Controllers
@@ -25,22 +26,34 @@ namespace FlightManagerService.Controllers
             return await _context.Flights.ToListAsync();
         }
 
-        // POST: api/Flights
-        [HttpPost]
-        [HttpPost]
-        public async Task<ActionResult> PostFlights([FromBody] IEnumerable<Flight> flights)
+        // POST: api/Flights/replace
+        [HttpPost("replace")]
+        public async Task<ActionResult> ReplaceFlights([FromBody] IEnumerable<Flight> flights)
         {
-            // Очистка таблицы перед добавлением новых данных
             _context.Flights.RemoveRange(_context.Flights);
             await _context.SaveChangesAsync();
 
-            // Добавляем все рейсы в базу данных
             _context.Flights.AddRange(flights);
             await _context.SaveChangesAsync();
 
-            // Возвращаем статус Created
             return CreatedAtAction(nameof(GetFlights), new { }, null);
         }
 
+        // POST: api/Flights/add
+        [HttpPost("add")]
+        public async Task<ActionResult> AddFlights([FromBody] IEnumerable<Flight> flights)
+        {
+            var existingFlightIds = _context.Flights.Select(f => f.FlightId).ToHashSet();
+
+            var newFlights = flights.Where(f => !existingFlightIds.Contains(f.FlightId)).ToList();
+
+            if (newFlights.Any())
+            {
+                _context.Flights.AddRange(newFlights);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(); // Возвращаем Ok, если добавлены новые данные или если ничего не было добавлено
+        }
     }
 }
