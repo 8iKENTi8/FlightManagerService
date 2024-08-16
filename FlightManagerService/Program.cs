@@ -11,6 +11,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Регистрация репозитория для сущности Flight
 builder.Services.AddScoped<IFlightRepository, FlightRepository>();
+// Регистрация репозитория для сущности Passenger
+builder.Services.AddScoped<IPassengerRepository, PassengerRepository>();
 
 
 builder.Services.AddControllers();
