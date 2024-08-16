@@ -1,6 +1,5 @@
 ﻿using FlightManagerService.Data;
 using FlightManagerService.Models;
-using System.Linq; // Для методов расширения LINQ
 using Microsoft.EntityFrameworkCore; // Для методов расширения EF Core, включая ToListAsync
 
 
