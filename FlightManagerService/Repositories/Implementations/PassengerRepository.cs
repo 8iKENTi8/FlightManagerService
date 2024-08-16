@@ -1,15 +1,17 @@
 ﻿using FlightManagerService.Data;
 using FlightManagerService.Models;
-using System.Linq;
+using FlightManagerService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 public class PassengerRepository : IPassengerRepository
 {
     private readonly AppDbContext _context;
+    private readonly IPassengerIdProvider _passengerIdProvider;
 
-    public PassengerRepository(AppDbContext context)
+    public PassengerRepository(AppDbContext context, IPassengerIdProvider passengerIdProvider)
     {
         _context = context;
+        _passengerIdProvider = passengerIdProvider;
     }
 
     public async Task<IEnumerable<Passenger>> GetAllAsync()
@@ -30,7 +32,7 @@ public class PassengerRepository : IPassengerRepository
 
     public async Task<bool> AddAsync(IEnumerable<Passenger> passengers)
     {
-        var existingPassengerIds = _context.Passengers.Select(p => p.PassengerId).ToHashSet();
+        var existingPassengerIds = await _passengerIdProvider.GetAllPassengerIdsAsync();
         var newPassengers = passengers.Where(p => !existingPassengerIds.Contains(p.PassengerId)).ToList();
         var existingPassengers = passengers.Where(p => existingPassengerIds.Contains(p.PassengerId)).ToList();
 

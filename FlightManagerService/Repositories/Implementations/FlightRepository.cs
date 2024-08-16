@@ -1,15 +1,17 @@
 ﻿using FlightManagerService.Data;
 using FlightManagerService.Models;
-using Microsoft.EntityFrameworkCore; // Для методов расширения EF Core, включая ToListAsync
-
+using FlightManagerService.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 public class FlightRepository : IFlightRepository
 {
     private readonly AppDbContext _context;
+    private readonly IFlightIdProvider _flightIdProvider;
 
-    public FlightRepository(AppDbContext context)
+    public FlightRepository(AppDbContext context, IFlightIdProvider flightIdProvider)
     {
         _context = context;
+        _flightIdProvider = flightIdProvider;
     }
 
     public async Task<IEnumerable<Flight>> GetAllAsync()
@@ -30,7 +32,7 @@ public class FlightRepository : IFlightRepository
 
     public async Task<bool> AddAsync(IEnumerable<Flight> flights)
     {
-        var existingFlightIds = _context.Flights.Select(f => f.FlightId).ToHashSet();
+        var existingFlightIds = await _flightIdProvider.GetAllFlightIdsAsync();
         var newFlights = flights.Where(f => !existingFlightIds.Contains(f.FlightId)).ToList();
         var existingFlights = flights.Where(f => existingFlightIds.Contains(f.FlightId)).ToList();
 

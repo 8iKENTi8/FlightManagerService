@@ -1,9 +1,6 @@
-﻿using FlightManagerService.Models;
-using FlightManagerService.Data;
+﻿using FlightManagerService.Data;
+using FlightManagerService.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 public class TicketRepository : ITicketRepository
 {
@@ -16,14 +13,19 @@ public class TicketRepository : ITicketRepository
 
     public async Task<IEnumerable<Ticket>> GetAllAsync()
     {
-        return await _context.Tickets.Include(t => t.Passenger).Include(t => t.Flight).ToListAsync();
+        return await _context.Tickets
+            .Include(t => t.Passenger)
+            .Include(t => t.Flight)
+            .ToListAsync();
     }
 
     public async Task<bool> ReplaceAllAsync(IEnumerable<Ticket> tickets)
     {
+        // Удаляем все текущие билеты
         _context.Tickets.RemoveRange(_context.Tickets);
         await _context.SaveChangesAsync();
 
+        // Добавляем новые билеты
         _context.Tickets.AddRange(tickets);
         await _context.SaveChangesAsync();
 
@@ -32,11 +34,20 @@ public class TicketRepository : ITicketRepository
 
     public async Task<bool> AddAsync(IEnumerable<Ticket> tickets)
     {
-        var flightIds = _context.Flights.Select(f => f.FlightId).ToHashSet();
-        var passengerIds = _context.Passengers.Select(p => p.PassengerId).ToHashSet();
+        // Выполняем асинхронный запрос для получения идентификаторов рейсов и пассажиров
+        var flightIds = await _context.Flights.Select(f => f.FlightId).ToListAsync();
+        var passengerIds = await _context.Passengers.Select(p => p.PassengerId).ToListAsync();
 
-        var invalidTickets = tickets.Where(t => !flightIds.Contains(t.FlightId) || !passengerIds.Contains(t.PassengerId)).ToList();
-        var validTickets = tickets.Where(t => flightIds.Contains(t.FlightId) && passengerIds.Contains(t.PassengerId)).ToList();
+        var flightIdSet = new HashSet<int>(flightIds);
+        var passengerIdSet = new HashSet<int>(passengerIds);
+
+        var invalidTickets = tickets
+            .Where(t => !flightIdSet.Contains(t.FlightId) || !passengerIdSet.Contains(t.PassengerId))
+            .ToList();
+
+        var validTickets = tickets
+            .Where(t => flightIdSet.Contains(t.FlightId) && passengerIdSet.Contains(t.PassengerId))
+            .ToList();
 
         if (validTickets.Any())
         {
@@ -47,13 +58,13 @@ public class TicketRepository : ITicketRepository
         return !invalidTickets.Any(); // Возвращаем false, если есть недопустимые билеты
     }
 
-
     public async Task<Ticket?> GetByIdAsync(int ticketId)
     {
-        return await _context.Tickets.Include(t => t.Passenger).Include(t => t.Flight)
+        return await _context.Tickets
+            .Include(t => t.Passenger)
+            .Include(t => t.Flight)
             .FirstOrDefaultAsync(t => t.TicketId == ticketId);
     }
-
 
     public async Task<bool> TicketExistsAsync(int ticketId)
     {

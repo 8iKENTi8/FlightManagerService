@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using FlightManagerService.Data;
-
 using FlightManagerService.Models;
+using FlightManagerService.Services.Implementations;
+using FlightManagerService.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,14 +10,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Регистрация репозитория для сущности Flight
+// Регистрация репозиториев для сущностей
 builder.Services.AddScoped<IFlightRepository, FlightRepository>();
-// Регистрация репозитория для сущности Passenger
 builder.Services.AddScoped<IPassengerRepository, PassengerRepository>();
-// Регистрация репозитория для сущности Ticket
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 
-
+// Регистрация провайдеров
+builder.Services.AddScoped<IFlightIdProvider, FlightIdProvider>();
+builder.Services.AddScoped<IPassengerIdProvider, PassengerIdProvider>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
